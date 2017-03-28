@@ -27,13 +27,16 @@ The project uses a 5 step process (general procedure) for it's predicting task w
 
 Keep iterating over the above steps again and againand tune them according to the need so as to acheive better performance.
 
-
 # File Description
 
 titanic_predictor - contains python code for predicting survival.
+
 my_solution.csv - contains sample output file generated from algorithm.
+
 train.csv- contains training data
+
 test.csv - contains testing data for making predictions
+
 readme.md - for guide to this project.
 
 # Algorithm Performance
@@ -43,5 +46,7 @@ Note - The results will keep changing over time as the competetion is still ongo
 
 # References
 [1] Titanic: Machine Learning from Disaster (https://www.kaggle.com/c/titanic)
+
 [2] Applied Machine Learning Process (http://machinelearningmastery.com/process-for-working-through-machine-learning-problems/)
+
 [3] Titanic: Machine Learning from Disaster Leaderboard (https://www.kaggle.com/c/titanic/leaderboard)
