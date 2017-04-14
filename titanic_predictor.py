@@ -25,7 +25,7 @@ from pandas.tools.plotting import scatter_matrix
 from sklearn import preprocessing
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
-
+from sklearn.ensemble import BaggingClassifier
 
 train = pd.read_csv('train.csv')	#location needs to be given from the folder the code is presently saved
 #taking a quick glance of data
@@ -143,7 +143,8 @@ for name, model in models:
 h_layer_sizes = []
 for i in range(4,16):
        for j in range(4,16):
-              h_layer_sizes.append((i,j))
+              for k in range(4,16):
+                    h_layer_sizes.append((i,j,k))
 
 #hyperparameter space to be tuned is specified
 params_nn = {"activation":["relu","logistic","tanh"], "hidden_layer_sizes": h_layer_sizes, "solver" : ["lbfgs", "sgd", "adam"], "alpha" : 
@@ -157,8 +158,12 @@ print(grid.best_params_)
 #Best parameters after search results are as follows-
 # best_params_ = {'tol':0.0001, 'hidden_layer_sizes':(14,7), 'activation':'tanh'
 #'alpha' :5e-5, 'solver':'adam'}
+
+# for 3 hidden layer configuration
+# best_params = {'tol':0.0001, 'hidden_layer_sizes :(7,13,7), 'activation':'relu', 'alpha' :0.0001, 'solver' : 'adam'}
 """
-mlp = MLPClassifier(activation='tanh',alpha=2e-05, hidden_layer_sizes=(14, 7), max_iter=1000, solver='adam', tol=0.0001)
+
+mlp = MLPClassifier(activation='tanh',alpha=2e-05, hidden_layer_sizes=(7, 13, 7), max_iter=1000, solver='adam', tol=0.0001)
 #even though the above mlp classifier is not giving that good results, it gives best output on kaggle servers, so we will go with this only
 
 print("Format:\n\nAlgorithm_Name : mean_accuracy (std_of_accuracy)")
@@ -170,6 +175,17 @@ cv_results = cross_val_score(mlp, feature_table, target_values, cv=kfold, scorin
 msg = "%s: %f (%f)" % ("mlp ", cv_results.mean(), cv_results.std())
 print(msg)
 mlp_result = mlp.fit(feature_table,target_values)
+
+print('MLP Training Score: ' + str(mlp.score(feature_table,target_values)))
+
+# using instance bagging to improve performance
+bag_mlp = BaggingClassifier(base_estimator = mlp, n_estimators = 10)
+kfold = KFold(n_splits=10, random_state=7)
+cv_results = cross_val_score(bag_mlp, feature_table, target_values, cv=kfold, scoring=scoring)
+msg = "%s: %f (%f)" % ("mlp bagged:", cv_results.mean(), cv_results.std())
+print(msg + '\n')
+bag_mlp_result = bag_mlp.fit(feature_table, target_values)
+
 #mlp ends
 
 
@@ -195,6 +211,16 @@ cv_results = cross_val_score(svm, feature_table, target_values, cv=kfold, scorin
 msg = "%s: %f (%f)" % ("svm", cv_results.mean(), cv_results.std())
 print(msg)
 svm_result = svm.fit(feature_table,target_values)
+
+print('SVM Training Score: ' + str(svm.score(feature_table,target_values)))
+
+# using instance bagging to improve performance
+bag_svm = BaggingClassifier(base_estimator = svm, n_estimators = 10)
+kfold = KFold(n_splits=10, random_state=7)
+cv_results = cross_val_score(bag_svm, feature_table, target_values, cv=kfold, scoring=scoring)
+msg = "%s: %f (%f)" % ("svm bagged:", cv_results.mean(), cv_results.std())
+print(msg + '\n')
+bag_svm_result = bag_svm.fit(feature_table, target_values)
 
 #svm ends
 
@@ -225,6 +251,17 @@ cv_results = cross_val_score(dt, feature_table, target_values, cv=kfold, scoring
 msg = "%s: %f (%f)" % ("dt", cv_results.mean(), cv_results.std())
 print(msg)
 dt_result = dt.fit(feature_table,target_values)
+
+print('Decision Tree Training Score: ' + str(dt.score(feature_table,target_values)))
+
+# using instance bagging to improve performance
+bag_dt = BaggingClassifier(base_estimator = dt, n_estimators = 10)
+kfold = KFold(n_splits=10, random_state=7)
+cv_results = cross_val_score(bag_dt, feature_table, target_values, cv=kfold, scoring=scoring)
+msg = "%s: %f (%f)" % ("dt bagged:", cv_results.mean(), cv_results.std())
+print(msg + '\n')
+bag_dt_result = bag_dt.fit(feature_table, target_values)
+
 
 #Decision tree Ends
 #now as the classifiers have been tuned, they are ready for predicting 
@@ -272,7 +309,7 @@ test_features = ft.transform(test_features)
 
 #All 3 classifiers give similar performance. So a majority voting is performed between them for optimum results.
 voting_result = VotingClassifier(estimators=[
-         ('mlp', mlp), ('svm', svm), ('dt', dt)], voting='hard')
+         ('mlp', mlp),  ('bag_svm', bag_svm), ('bag_dt', bag_dt)], voting='hard')
 #voting classifier performace is obtained using 10 fold cross validation
 cv_results = cross_val_score(voting_result, feature_table, target_values, cv=kfold, scoring=scoring)
 msg = "%s: %f (%f)" % ("voting result ", cv_results.mean(), cv_results.std())
@@ -280,14 +317,22 @@ print(msg)
 
 voting_result = voting_result.fit(feature_table,target_values)
 
-#test_survive = mlp.predict(test_features)
-#test_survive = svm.predict(test_features)
-#test_survive = dt.predict(test_features)
+test_survive = bag_mlp.predict(test_features)
+#test_survive = bag_svm.predict(test_features)
+#test_survive = bag_dt.predict(test_features)
 
 #predictions are stored in dataframe test_survive
-test_survive = voting_result.predict(test_features)
+#test_survive = voting_result.predict(test_features)
 passenger_id = test["PassengerId"].values
 
 #solution is saved on local system.
 my_solution = pd.DataFrame(test_survive, passenger_id, columns = ["Survived"])
 my_solution.to_csv("my_solution.csv", index_label = ["PassengerId"])
+
+
+# Some conclusions - 
+# bagged dt doesnt perform good
+# bagged svm performs same as normal svm
+# bagged voting classifier also gives similar performance
+# bagged mlp isn't good either
+# our best short is to use an SVM algo. as it gives best performance
