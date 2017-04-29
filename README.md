@@ -40,7 +40,7 @@ test.csv - contains testing data for making predictions
 readme.md - for guide to this project.
 
 # Algorithm Performance
-The procedure mentioned above in Project Description was successful in yielding decent results. The procedure had an accuracy of 78.947% on unseen validation set in this binary classification problem, which ranked 1912 out of total 6176 contestants as of now [3] (top 31%)
+The procedure mentioned above in Project Description was successful in yielding decent results. The procedure had an accuracy of 81.34% on unseen validation set in this binary classification problem, which ranked 424 out of total 6613 contestants as of now [3] (top 7%)
 
 Note - The results will keep changing over time as the competition is still ongoing.
 
